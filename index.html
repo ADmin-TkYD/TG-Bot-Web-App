@@ -3,37 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <title>Сканер штрихкодов</title>
+    <style>
+        #interactive {
+            width: 100%;
+            max-width: 600px;
+            height: 400px;
+            margin: auto;
+        }
+    </style>
 </head>
 <body>
     <h1>Сканер штрихкодов</h1>
     <div id="interactive" class="viewport"></div>
     <div id="result"></div>
+    <button id="scan-again" style="display: none;">Сканировать снова</button>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
     <script>
         const resultNode = document.getElementById('result');
+        const scanAgainButton = document.getElementById('scan-again');
+        const interactiveNode = document.getElementById('interactive');
 
-        Quagga.init({
-            inputStream : {
-                name : "Live",
-                type : "LiveStream",
-                target: document.querySelector('#interactive')    // Or '#yourElement' (optional)
-            },
-            decoder : {
-                readers : ["code_128_reader", "ean_reader"]
-            }
-        }, function(err) {
-            if (err) {
-                console.log(err);
-                return;
-            }
-            Quagga.start();
-        });
+        function startScanner() {
+            interactiveNode.innerHTML = '';
+            resultNode.innerText = '';
+            scanAgainButton.style.display = 'none';
 
-        Quagga.onDetected(function(data) {
-            resultNode.innerText = `Найденный штрихкод: ${data.codeResult.code}`;
-            Quagga.stop();
-        });
+            Quagga.init({
+                inputStream : {
+                    name : "Live",
+                    type : "LiveStream",
+                    target: document.querySelector('#interactive')
+                },
+                decoder : {
+                    readers : ["code_128_reader", "ean_reader"]
+                }
+            }, function(err) {
+                if (err) {
+                    console.log(err);
+                    return;
+                }
+                Quagga.start();
+            });
+
+            Quagga.onDetected(function(data) {
+                resultNode.innerText = `Найденный штрихкод: ${data.codeResult.code}`;
+                Quagga.stop();
+                interactiveNode.innerHTML = ''; // Очистка видеопотока
+                scanAgainButton.style.display = 'block'; // Показ кнопки для повторного сканирования
+            });
+        }
+
+        scanAgainButton.addEventListener('click', startScanner);
+
+        document.addEventListener('DOMContentLoaded', startScanner);
     </script>
 </body>
 </html>
