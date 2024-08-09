@@ -1,62 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Сканер штрихкодов</title>
-    <style>
-        #interactive {
-            width: 100%;
-            max-width: 600px;
-            height: 400px;
-            margin: auto;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    #scanner-container {
+      width: 640px;
+      height: 480px;
+      border: 1px solid #ccc;
+      margin: 20px 0;
+      position: relative;
+      display: none; /* скрытие контейнера по умолчанию */
+    }
+    #barcodeResultContainer {
+      background: rgba(255, 255, 255, 0.8);
+      padding: 10px;
+      border-radius: 5px;
+      position: relative;
+      margin-top: 20px;
+      display: none; /* скрытие контейнера с результатом по умолчанию */
+    }
+  </style>
+  <title>Сканер штрих-кодов</title>
 </head>
 <body>
-    <h1>Сканер штрихкодов</h1>
-    <div id="interactive" class="viewport"></div>
-    <div id="result"></div>
-    <button id="scan-again" style="display: none;">Сканировать снова</button>
+  <h1>Сканер штрих-кодов</h1>
+  <button id="startButton">Начать сканирование</button>
+  <div id="scanner-container">
+    <!-- Контейнер для сканирования -->
+  </div>
+  <div id="barcodeResultContainer">
+    <p id="barcodeResult">Номер штрих-кода: </p>
+  </div>
+  <script>
+    const startButton = document.getElementById('startButton');
+    const barcodeResultElement = document.getElementById('barcodeResult');
+    const scannerContainer = document.getElementById('scanner-container');
+    const barcodeResultContainer = document.getElementById('barcodeResultContainer');
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
-    <script>
-        const resultNode = document.getElementById('result');
-        const scanAgainButton = document.getElementById('scan-again');
-        const interactiveNode = document.getElementById('interactive');
+    // Функция для начала сканирования
+    function startScanner() {
+      scannerContainer.style.display = 'block'; // Отображаем контейнер при запуске сканирования
 
-        function startScanner() {
-            interactiveNode.innerHTML = '';
-            resultNode.innerText = '';
-            scanAgainButton.style.display = 'none';
-
-            Quagga.init({
-                inputStream : {
-                    name : "Live",
-                    type : "LiveStream",
-                    target: document.querySelector('#interactive')
-                },
-                decoder : {
-                    readers : ["code_128_reader", "ean_reader"]
-                }
-            }, function(err) {
-                if (err) {
-                    console.log(err);
-                    return;
-                }
-                Quagga.start();
-            });
-
-            Quagga.onDetected(function(data) {
-                resultNode.innerText = `Найденный штрихкод: ${data.codeResult.code}`;
-                Quagga.stop();
-                interactiveNode.innerHTML = ''; // Очистка видеопотока
-                scanAgainButton.style.display = 'block'; // Показ кнопки для повторного сканирования
-            });
+      Quagga.init({
+        inputStream: {
+          type: 'LiveStream',
+          target: scannerContainer, // ID или элемент DOM
+          constraints: {
+            facingMode: 'environment' // или 'user'
+          }
+        },
+        decoder: {
+          readers: ['ean_reader', 'code_128_reader'] // Поддержка EAN-13 и Code128
         }
+      }, (err) => {
+        if (err) {
+          console.error(err);
+          alert('Ошибка при инициализации сканера');
+          return;
+        }
+        
+        Quagga.start();
+      });
 
-        scanAgainButton.addEventListener('click', startScanner);
+      Quagga.onDetected((data) => {
+        const code = data.codeResult.code;
+        barcodeResultElement.textContent = `Номер штрих-кода: ${code}`;
+        barcodeResultContainer.style.display = 'block'; // Отображаем контейнер с результатом
+        stopScanner();
+      });
+    }
 
-        document.addEventListener('DOMContentLoaded', startScanner);
-    </script>
+    // Функция для остановки сканирования
+    function stopScanner() {
+      Quagga.stop();
+
+      // Скроем контейнер после остановки сканирования
+      scannerContainer.style.display = 'none';
+    }
+
+    startButton.addEventListener('click', startScanner);
+  </script>
 </body>
 </html>
